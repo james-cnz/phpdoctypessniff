@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="JamesCNZMoodle" xsi:noNamespaceSchemaLocation="../../../phpcs.xsd">
+    <description>Moodle sniff.</description>
+    <arg name="extensions" value="php" />
+
+    <rule ref="JamesCNZPSR5.Commenting.PHPDocTypes">
+        <properties>
+            <property name="checkPassSplat" value="false"/>
+        </properties>
+    </rule>
+
+</ruleset>

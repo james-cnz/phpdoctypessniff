@@ -1,0 +1,39 @@
+{
+    "name": "jamescnz/phpdoctypessniff",
+    "type": "phpcodesniffer-standard",
+    "description": "A PHPDoc types checker",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "James Calder",
+            "email": "jeg+accounts.github@cloudy.kiwi.nz"
+        }
+    ],
+    "version": "0.1",
+    "require": {
+        "php": ">=7.4.0",
+        "ext-json": "*",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.1.1",
+        "squizlabs/php_codesniffer": "^3.13.2"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "minimum-stability": "dev",
+    "scripts": {
+        "install-codestandards": [
+            "Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
+        ]
+    },
+    "support": {
+        "issues": "https://github.com/james-cnz/phpdoctypessniff/issues",
+        "source": "https://github.com/james-cnz/phpdoctypessniff"
+    },
+    "autoload": {
+        "psr-4": {
+            "JamesCNZ\\PHPDocTypesSniff\\": ""
+        }
+    }
+}
