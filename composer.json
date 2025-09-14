@@ -14,14 +14,13 @@
         "php": ">=7.4.0",
         "ext-json": "*",
         "dealerdirect/phpcodesniffer-composer-installer": "^1.1.1",
-        "squizlabs/php_codesniffer": "^3.13.2"
+        "squizlabs/php_codesniffer": "^3.13"
     },
     "config": {
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
     },
-    "minimum-stability": "dev",
     "scripts": {
         "install-codestandards": [
             "Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
