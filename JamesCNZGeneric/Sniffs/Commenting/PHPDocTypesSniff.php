@@ -365,9 +365,13 @@ class PHPDocTypesSniff implements Sniff
                     // Fetch comment, if any.
                     $comment = $this->commentPending;
                     $this->commentPending = null;
-                    // Ignore attribute(s).
+                    // Check for Override attribute.
+                    $attributeOverride = false;
                     while ($this->token['code'] === T_ATTRIBUTE) {
                         while ($this->token['code'] !== T_ATTRIBUTE_END) {
+                            if (strtolower($this->token['content']) == 'override') {
+                                $attributeOverride = true;
+                            }
                             $this->advance();
                         }
 
@@ -418,10 +422,10 @@ class PHPDocTypesSniff implements Sniff
                         $this->processClassish($scope, $comment);
                     } else if (in_array($this->token['code'], [T_FUNCTION, T_CLOSURE, T_FN]) === true) {
                         // Function.
-                        $this->processFunction($scope, $comment);
+                        $this->processFunction($scope, $comment, $attributeOverride);
                     } else {
                         // Variable.
-                        $this->processVariable($scope, $comment);
+                        $this->processVariable($scope, $comment, $attributeOverride);
                     }
                 } else {
                     // We got something unrecognised.
@@ -1209,13 +1213,14 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a function.
      *
-     * @param \stdClass&object{namespace: string, uses: array<string, string>, templates: array<string, string>, className: ?string, parentName: ?string, type: string, closer: ?int} $scope   Scope
-     * @param ?(\stdClass&object{ptr: int, tags: array<string, object{ptr: int, content: string, cStartPtr: ?int, cEndPtr: ?int}[]>})                                                 $comment PHPDoc block
+     * @param \stdClass&object{namespace: string, uses: array<string, string>, templates: array<string, string>, className: ?string, parentName: ?string, type: string, closer: ?int} $scope             Scope
+     * @param ?(\stdClass&object{ptr: int, tags: array<string, object{ptr: int, content: string, cStartPtr: ?int, cEndPtr: ?int}[]>})                                                 $comment           PHPDoc block
+     * @param bool                                                                                                                                                                    $attributeOverride
      *
      * @return         void
      * @phpstan-impure
      */
-    protected function processFunction($scope, $comment)
+    protected function processFunction($scope, $comment, $attributeOverride)
     {
 
         $ptr   = $this->filePtr;
@@ -1259,7 +1264,7 @@ class PHPDocTypesSniff implements Sniff
         // Checks.
         if ($this->pass === 2) {
             // Check for missing docs if not anonymous.
-            if ($this->checkHasDocBlocks === true && $name !== null && $comment === null) {
+            if ($this->checkHasDocBlocks === true && !$attributeOverride && $name !== null && $comment === null) {
                 $this->file->addWarning(
                     'PHPDoc function is not documented',
                     $ptr,
@@ -1589,13 +1594,14 @@ class PHPDocTypesSniff implements Sniff
     /**
      * Process a variable.
      *
-     * @param \stdClass&object{namespace: string, uses: array<string, string>, templates: array<string, string>, className: ?string, parentName: ?string, type: string, closer: ?int} $scope   Scope
-     * @param ?(\stdClass&object{ptr: int, tags: array<string, object{ptr: int, content: string, cStartPtr: ?int, cEndPtr: ?int}[]>})                                                 $comment PHPDoc block
+     * @param \stdClass&object{namespace: string, uses: array<string, string>, templates: array<string, string>, className: ?string, parentName: ?string, type: string, closer: ?int} $scope             Scope
+     * @param ?(\stdClass&object{ptr: int, tags: array<string, object{ptr: int, content: string, cStartPtr: ?int, cEndPtr: ?int}[]>})                                                 $comment           PHPDoc block
+     * @param bool                                                                                                                                                                    $attributeOverride
      *
      * @return         void
      * @phpstan-impure
      */
-    protected function processVariable($scope, $comment)
+    protected function processVariable($scope, $comment, $attributeOverride)
     {
 
         // Parse var/const token.
@@ -1647,7 +1653,7 @@ class PHPDocTypesSniff implements Sniff
 
         // Checking.
         if ($this->pass === 2) {
-            if ($this->checkHasDocBlocks === true && $comment === null && $scope->type === 'classish') {
+            if ($this->checkHasDocBlocks === true && !$attributeOverride && $comment === null && $scope->type === 'classish') {
                 // Require comments for class variables and constants.
                 $this->file->addWarning(
                     'PHPDoc variable or constant is not documented',
