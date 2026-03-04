@@ -598,12 +598,12 @@ class PHPDocTypesSniff implements Sniff
             $this->filePtr = $tagPtr;
             $this->fetchToken();
 
-            $tag = (object) [
-                'ptr'       => $tagPtr,
-                'content'   => '',
-                'cStartPtr' => null,
-                'cEndPtr'   => null,
-            ];
+            /** @var \stdClass&object{ptr: int, content: string, cStartPtr: ?int, cEndPtr: ?int} */
+            $tag = new \stdClass();
+            $tag->ptr       = $tagPtr;
+            $tag->content   = '';
+            $tag->cStartPtr = null;
+            $tag->cEndPtr   = null;
 
             // Fetch the tag type.
             $tagType = $this->token['content'];
@@ -919,7 +919,7 @@ class PHPDocTypesSniff implements Sniff
 
                     // Figure out the alias.
                     $alias = substr($namespace, (strrpos($namespace, '\\') + 1));
-                    if ($alias === false || $alias === '') {
+                    if ($alias === '') {
                         throw new \Exception('Use item has trailing back slash.');
                     }
 
@@ -948,7 +948,7 @@ class PHPDocTypesSniff implements Sniff
                     $alias = $namespace;
                 }
 
-                if ($alias === false || $alias === '') {
+                if ($alias === '') {
                     throw new \Exception('Use name has trailing back slash.');
                 }
 
@@ -1024,7 +1024,7 @@ class PHPDocTypesSniff implements Sniff
         $parent = $this->file->findExtendedClassName($ptr);
         if ($parent === false) {
             $parent = null;
-        } else if ($parent !== null && $parent[0] !== '\\') {
+        } else if ($parent[0] !== '\\') {
             if (isset($scope->uses[$parent]) === true) {
                 $parent = $scope->uses[$parent];
             } else {

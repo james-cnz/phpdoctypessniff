@@ -1,0 +1,32 @@
+# Copied from https://github.com/PHPCSStandards/.github/blob/main/.github/workflows/reusable-markdownlint.yml
+
+name: Markdownlint
+
+on: [push, pull_request]
+
+jobs:
+  markdownlint:
+    name: 'Lint Markdown'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check for existence of a Markdownlint config file
+        id: has_config
+        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3.0.0
+        with:
+          files: ".markdownlint-cli2.y*ml"
+
+      # @link https://github.com/marketplace/actions/problem-matcher-for-markdownlint-cli
+      - name: Enable showing issue in PRs
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        uses: xt0rted/markdownlint-problem-matcher@1a5fabfb577370cfdf5af944d418e4be3ea06f27 # v3.0.0
+
+      # @link https://github.com/marketplace/actions/markdownlint-cli2-action
+      - name: Check markdown with CLI2
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        uses: DavidAnson/markdownlint-cli2-action@992badcdf24e3b8eb7e87ff9287fe931bcb00c6e # v20.0.0

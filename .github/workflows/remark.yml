@@ -1,0 +1,85 @@
+# Copied from https://github.com/PHPCSStandards/.github/blob/main/.github/workflows/reusable-remark.yml
+
+name: Remark
+
+on: [push, pull_request]
+
+jobs:
+  remark:
+    name: 'QA Markdown'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - fail-on-warnings: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check for existence of a Remark config file
+        id: has_config
+        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3.0.0
+        with:
+          files: ".remarkrc"
+
+      - name: Set up node and enable caching of dependencies
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: "20"
+
+      # To make the command available on CLI, it needs to be installed globally.
+      - name: Install Remark CLI globally
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        run: npm install --global remark-cli --foreground-scripts true --fund false
+
+      # To allow for creating a custom config which references rules which are included
+      # in the presets, without having to install all rules individually, a local install
+      # works best (and installing the presets in the first place, of course).
+      #
+      # Note: the first group of packages are all part of the mono "Remark lint" repo.
+      # The second group of packages (heading-whitespace and down) are additional
+      # "external" rules/plugins.
+      - name: Install Remark rules locally
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        run: >
+          npm install --foreground-scripts true --fund false
+          remark-lint
+          remark-gfm
+          remark-preset-lint-consistent
+          remark-preset-lint-recommended
+          remark-preset-lint-markdown-style-guide
+          remark-lint-checkbox-content-indent
+          remark-lint-linebreak-style
+          remark-lint-no-dead-urls
+          remark-lint-no-duplicate-defined-urls
+          remark-lint-no-empty-url
+          remark-lint-no-heading-like-paragraph
+          remark-lint-no-reference-like-url
+          remark-lint-no-unneeded-full-reference-image
+          remark-lint-no-unneeded-full-reference-link
+          remark-lint-strikethrough-marker
+          remark-lint-heading-whitespace
+          remark-lint-list-item-punctuation
+          remark-lint-match-punctuation
+          remark-lint-no-hr-after-heading
+          remark-lint-are-links-valid-duplicate
+          remark-validate-links
+
+      - name: Run Remark-lint
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        run: remark . ${{ matrix.fail-on-warnings && '--frail' || '' }}
+
+      # @link https://github.com/reviewdog/action-remark-lint
+      - name: Show Remark-lint annotations in PR
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        uses: reviewdog/action-remark-lint@82225f7db5b4a3caaca3052733b6800fa7d109b0 # v5.18.0
+        with:
+          fail_level: ${{ matrix.fail-on-warnings && 'warning' || 'error' }}
+          install_deps: false
+          level: info
+          reporter: github-pr-check

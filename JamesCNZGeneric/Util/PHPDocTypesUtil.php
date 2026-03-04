@@ -770,7 +770,7 @@ class PHPDocTypesUtil
             $next = substr($this->text, $startPos, ($endPos - $startPos));
             if ($stringUnterminated === true) {
                 $next = '[unterminated string]';
-            } else if ($next === false || $next === '') {
+            } else if ($next === '') {
                 $next = null;
             }
 
@@ -908,7 +908,7 @@ class PHPDocTypesUtil
                     $nextNext = $this->next(1);
                     $haveMoreIntersections = $this->next === '&'
                         && !(in_array($nextNext, ['...', '=', ',', ')', null])
-                            || ($nextNext !== null && $nextNext[0] === '$'));
+                            || ($nextNext[0] === '$'));
                     if ($haveMoreIntersections === true) {
                         $this->parseToken('&');
                     }
