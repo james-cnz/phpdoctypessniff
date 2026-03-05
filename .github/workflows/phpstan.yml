@@ -25,7 +25,7 @@ jobs:
         id: has_config
         uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3.0.0
         with:
-          files: "phpstan.neon.dist, phpstan.neon"
+          files: "phpstan.neon*"
 
       - name: Create tools string
         id: tools

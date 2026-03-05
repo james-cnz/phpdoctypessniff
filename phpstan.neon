@@ -4,5 +4,5 @@ parameters:
         - .
     excludePaths:
         - vendor
-    scanDirectories:
-        - vendor/squizlabs/php_codesniffer
+    bootstrapFiles:
+        - vendor/squizlabs/php_codesniffer/autoload.php

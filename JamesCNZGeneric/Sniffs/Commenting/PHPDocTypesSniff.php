@@ -1444,6 +1444,7 @@ class PHPDocTypesSniff implements Sniff
         // Parameters could contain anonymous classes or functions.
         $this->advanceTo($parametersPtr);
         $this->processBlock($scope, 2);
+        assert(array_key_exists('parenthesis_closer', $this->tokens[$parametersPtr]));
         $this->advanceTo($this->tokens[$parametersPtr]['parenthesis_closer']);
         $this->advance(T_CLOSE_PARENTHESIS);
 
