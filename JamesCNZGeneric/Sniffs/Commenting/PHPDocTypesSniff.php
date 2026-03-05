@@ -259,11 +259,12 @@ class PHPDocTypesSniff implements Sniff
      * @param \stdClass&object{namespace: string, uses: array<string, string>, templates: array<string, string>, className: ?string, parentName: ?string, type: string, closer: ?int} $scope Scope
      * @param 0|1|2                                                                                                                                                                   $type  0=file 1=block 2=parameters
      *
-     * @return         void
+     * @return         bool
      * @phpstan-impure
      */
-    protected function processBlock($scope, $type)
+    protected function processBlock($scope, $type): bool
     {
+        $retNonVoid = false;
 
         // Check we are at the start of a scope, and store scope closer.
         if ($type === 0) {
@@ -321,6 +322,7 @@ class PHPDocTypesSniff implements Sniff
                             T_FN,
                             T_VAR,
                             T_CONST,
+                            T_RETURN,
                             null,
                         ]
                     )
@@ -423,6 +425,11 @@ class PHPDocTypesSniff implements Sniff
                         // Variable.
                         $this->processVariable($scope, $comment);
                     }
+                } else if ($this->token['code'] === T_RETURN) {
+                    $this->advance(T_RETURN);
+                    if ($this->token['code'] !== T_SEMICOLON) {
+                        $retNonVoid = true;
+                    }
                 } else {
                     // We got something unrecognised.
                     $this->advance();
@@ -441,6 +448,7 @@ class PHPDocTypesSniff implements Sniff
             throw new \Exception('Malformed scope closer.');
         }
 
+        return $retNonVoid;
     }//end processBlock()
 
 
@@ -1431,7 +1439,53 @@ class PHPDocTypesSniff implements Sniff
                     }
                 }
             }//end if
+        }//end if
 
+        // Parameters could contain anonymous classes or functions.
+        $this->advanceTo($parametersPtr);
+        $this->processBlock($scope, 2);
+        $this->advanceTo($this->tokens[$parametersPtr]['parenthesis_closer']);
+        $this->advance(T_CLOSE_PARENTHESIS);
+
+        // Return type.
+        if ($this->token['code'] == T_COLON) {
+            $this->advance(T_COLON);
+            while (in_array(
+                $this->token['code'],
+                [
+                    T_TYPE_UNION,
+                    T_TYPE_INTERSECTION,
+                    T_NULLABLE,
+                    T_TYPE_OPEN_PARENTHESIS,
+                    T_TYPE_CLOSE_PARENTHESIS,
+                    T_NAME_FULLY_QUALIFIED,
+                    T_NAME_QUALIFIED,
+                    T_NAME_RELATIVE,
+                    T_NS_SEPARATOR,
+                    T_STRING,
+                    T_NULL,
+                    T_ARRAY,
+                    T_SELF,
+                    T_PARENT,
+                    T_FALSE,
+                    T_TRUE,
+                    T_CALLABLE,
+                    T_STATIC,
+                ]
+            )) {
+                $this->advance();
+            }
+        }
+
+        // Content.
+        $retNonVoid = false;
+        if ($blockPtr !== null) {
+            $this->advanceTo($blockPtr);
+            $retNonVoid = $this->processBlock($scope, 1);
+        };
+
+        // Return checks.
+        if ($this->pass === 2) {
             // Check return type.
             if ($comment !== null) {
                 if ($properties['return_type'] !== '') {
@@ -1451,6 +1505,7 @@ class PHPDocTypesSniff implements Sniff
 
                 if ($this->checkHasTags === true && count($comment->tags['@return']) < 1
                     && $name !== '__construct' && $retParsed->type !== 'void'
+                    && ($properties['return_type'] !== '' || $retNonVoid)
                 ) {
                     $this->file->addWarning(
                         'PHPDoc missing function @return tag',
@@ -1516,48 +1571,6 @@ class PHPDocTypesSniff implements Sniff
                 }//end foreach
             }//end if
         }//end if
-
-        // Parameters could contain anonymous classes or functions.
-        $this->advanceTo($parametersPtr);
-        $this->processBlock($scope, 2);
-        $this->advanceTo($this->tokens[$parametersPtr]['parenthesis_closer']);
-        $this->advance(T_CLOSE_PARENTHESIS);
-
-        // Return type.
-        if ($this->token['code'] == T_COLON) {
-            $this->advance(T_COLON);
-            while (in_array(
-                $this->token['code'],
-                [
-                    T_TYPE_UNION,
-                    T_TYPE_INTERSECTION,
-                    T_NULLABLE,
-                    T_TYPE_OPEN_PARENTHESIS,
-                    T_TYPE_CLOSE_PARENTHESIS,
-                    T_NAME_FULLY_QUALIFIED,
-                    T_NAME_QUALIFIED,
-                    T_NAME_RELATIVE,
-                    T_NS_SEPARATOR,
-                    T_STRING,
-                    T_NULL,
-                    T_ARRAY,
-                    T_SELF,
-                    T_PARENT,
-                    T_FALSE,
-                    T_TRUE,
-                    T_CALLABLE,
-                    T_STATIC,
-                ]
-            )) {
-                $this->advance();
-            }
-        }
-
-        // Content.
-        if ($blockPtr !== null) {
-            $this->advanceTo($blockPtr);
-            $this->processBlock($scope, 1);
-        };
 
     }//end processFunction()
 
