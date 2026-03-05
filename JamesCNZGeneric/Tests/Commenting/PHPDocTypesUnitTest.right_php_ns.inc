@@ -11,7 +11,7 @@
  *            CC BY-SA 4.0 or later
  */
 
-namespace MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures {
+namespace JamesCNZ\PHPDocTypesSniff\JamesCNZGeneric\Tests\Commenting {
 
     /**
      * A collection of valid PHP for testing
@@ -23,7 +23,7 @@ namespace MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures {
         /**
          * Namespaces recognised
          *
-         * @param \MoodleHQ\MoodleCS\moodle\Tests\Sniffs\Commenting\fixtures\PhpValid $x
+         * @param \JamesCNZ\PHPDocTypesSniff\JamesCNZGeneric\Tests\Commenting\PhpValid $x
          *
          * @return void
          */

@@ -1,0 +1,64 @@
+# Copied from https://github.com/PHPCSStandards/.github/blob/main/.github/workflows/reusable-phpstan.yml
+
+name: PHPStan
+
+on: [push, pull_request]
+
+jobs:
+  phpstan:
+    name: "PHPStan"
+    runs-on: "ubuntu-latest"
+
+    strategy:
+      matrix:
+        include:
+          - phpVersion: 'latest'
+            phpstanVersion: ''
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check for existence of a PHPStan config file
+        id: has_config
+        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3.0.0
+        with:
+          files: "phpstan.neon*"
+
+      - name: Create tools string
+        id: tools
+        run: |
+          if [ "${{ matrix.phpstanVersion }}" == "" ]; then
+            echo 'TOOLS=phpstan' >> "$GITHUB_OUTPUT"
+          else
+            echo 'TOOLS=phpstan:${{ matrix.phpstanVersion }}' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install PHP
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: ${{ matrix.phpVersion }}
+          coverage: none
+          tools: ${{ steps.tools.outputs.TOOLS }}
+
+      # Remove PHPCSDevCS to prevent circular dependency issues for repos using this workflow
+      # while also being a dependency of PHPCSDevCS.
+      - name: 'Composer: remove PHPCSDevCS'
+        run: composer remove --dev phpcsstandards/phpcsdevcs --no-update --no-interaction
+
+      # Install dependencies and handle caching in one go.
+      # Dependencies need to be installed to make sure the PHPUnit classes are recognized.
+      # @link https://github.com/marketplace/actions/install-php-dependencies-with-composer
+      - name: Install Composer dependencies
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        uses: "ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520" # 3.1.1
+        with:
+          # Bust the cache at least once a month - output format: YYYY-MM.
+          custom-cache-suffix: $(date -u "+%Y-%m")
+
+      - name: Run PHPStan
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        run: phpstan analyse

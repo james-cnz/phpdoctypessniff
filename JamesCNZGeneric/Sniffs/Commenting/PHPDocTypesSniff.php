@@ -259,11 +259,12 @@ class PHPDocTypesSniff implements Sniff
      * @param \stdClass&object{namespace: string, uses: array<string, string>, templates: array<string, string>, className: ?string, parentName: ?string, type: string, closer: ?int} $scope Scope
      * @param 0|1|2                                                                                                                                                                   $type  0=file 1=block 2=parameters
      *
-     * @return         void
+     * @return         bool
      * @phpstan-impure
      */
-    protected function processBlock($scope, $type)
+    protected function processBlock($scope, $type): bool
     {
+        $retNonVoid = false;
 
         // Check we are at the start of a scope, and store scope closer.
         if ($type === 0) {
@@ -321,6 +322,7 @@ class PHPDocTypesSniff implements Sniff
                             T_FN,
                             T_VAR,
                             T_CONST,
+                            T_RETURN,
                             null,
                         ]
                     )
@@ -427,6 +429,11 @@ class PHPDocTypesSniff implements Sniff
                         // Variable.
                         $this->processVariable($scope, $comment, $attributeOverride);
                     }
+                } else if ($this->token['code'] === T_RETURN) {
+                    $this->advance(T_RETURN);
+                    if ($this->token['code'] !== T_SEMICOLON) {
+                        $retNonVoid = true;
+                    }
                 } else {
                     // We got something unrecognised.
                     $this->advance();
@@ -445,6 +452,7 @@ class PHPDocTypesSniff implements Sniff
             throw new \Exception('Malformed scope closer.');
         }
 
+        return $retNonVoid;
     }//end processBlock()
 
 
@@ -602,12 +610,12 @@ class PHPDocTypesSniff implements Sniff
             $this->filePtr = $tagPtr;
             $this->fetchToken();
 
-            $tag = (object) [
-                'ptr'       => $tagPtr,
-                'content'   => '',
-                'cStartPtr' => null,
-                'cEndPtr'   => null,
-            ];
+            /** @var \stdClass&object{ptr: int, content: string, cStartPtr: ?int, cEndPtr: ?int} */
+            $tag = new \stdClass();
+            $tag->ptr       = $tagPtr;
+            $tag->content   = '';
+            $tag->cStartPtr = null;
+            $tag->cEndPtr   = null;
 
             // Fetch the tag type.
             $tagType = $this->token['content'];
@@ -923,7 +931,7 @@ class PHPDocTypesSniff implements Sniff
 
                     // Figure out the alias.
                     $alias = substr($namespace, (strrpos($namespace, '\\') + 1));
-                    if ($alias === false || $alias === '') {
+                    if ($alias === '') {
                         throw new \Exception('Use item has trailing back slash.');
                     }
 
@@ -952,7 +960,7 @@ class PHPDocTypesSniff implements Sniff
                     $alias = $namespace;
                 }
 
-                if ($alias === false || $alias === '') {
+                if ($alias === '') {
                     throw new \Exception('Use name has trailing back slash.');
                 }
 
@@ -1028,7 +1036,7 @@ class PHPDocTypesSniff implements Sniff
         $parent = $this->file->findExtendedClassName($ptr);
         if ($parent === false) {
             $parent = null;
-        } else if ($parent !== null && $parent[0] !== '\\') {
+        } else if ($parent[0] !== '\\') {
             if (isset($scope->uses[$parent]) === true) {
                 $parent = $scope->uses[$parent];
             } else {
@@ -1288,7 +1296,7 @@ class PHPDocTypesSniff implements Sniff
                 $paramParsedArray = [];
                 foreach ($parameters as $parameter) {
                     $paramText = $parameter['content'];
-                    $paramText = preg_replace('/\/\*.*\*\//', '', $paramText);
+                    $paramText = preg_replace('/\/\*.*\*\//', ' ', $paramText);
                     $paramText = trim($paramText);
                     while (($spacePos = strpos($paramText, ' ')) !== false
                         && in_array(
@@ -1436,7 +1444,54 @@ class PHPDocTypesSniff implements Sniff
                     }
                 }
             }//end if
+        }//end if
 
+        // Parameters could contain anonymous classes or functions.
+        $this->advanceTo($parametersPtr);
+        $this->processBlock($scope, 2);
+        assert(array_key_exists('parenthesis_closer', $this->tokens[$parametersPtr]));
+        $this->advanceTo($this->tokens[$parametersPtr]['parenthesis_closer']);
+        $this->advance(T_CLOSE_PARENTHESIS);
+
+        // Return type.
+        if ($this->token['code'] == T_COLON) {
+            $this->advance(T_COLON);
+            while (in_array(
+                $this->token['code'],
+                [
+                    T_TYPE_UNION,
+                    T_TYPE_INTERSECTION,
+                    T_NULLABLE,
+                    T_TYPE_OPEN_PARENTHESIS,
+                    T_TYPE_CLOSE_PARENTHESIS,
+                    T_NAME_FULLY_QUALIFIED,
+                    T_NAME_QUALIFIED,
+                    T_NAME_RELATIVE,
+                    T_NS_SEPARATOR,
+                    T_STRING,
+                    T_NULL,
+                    T_ARRAY,
+                    T_SELF,
+                    T_PARENT,
+                    T_FALSE,
+                    T_TRUE,
+                    T_CALLABLE,
+                    T_STATIC,
+                ]
+            )) {
+                $this->advance();
+            }
+        }
+
+        // Content.
+        $retNonVoid = false;
+        if ($blockPtr !== null) {
+            $this->advanceTo($blockPtr);
+            $retNonVoid = $this->processBlock($scope, 1);
+        };
+
+        // Return checks.
+        if ($this->pass === 2) {
             // Check return type.
             if ($comment !== null) {
                 if ($properties['return_type'] !== '') {
@@ -1456,6 +1511,7 @@ class PHPDocTypesSniff implements Sniff
 
                 if ($this->checkHasTags === true && count($comment->tags['@return']) < 1
                     && $name !== '__construct' && $retParsed->type !== 'void'
+                    && ($properties['return_type'] !== '' || $retNonVoid)
                 ) {
                     $this->file->addWarning(
                         'PHPDoc missing function @return tag',
@@ -1521,16 +1577,6 @@ class PHPDocTypesSniff implements Sniff
                 }//end foreach
             }//end if
         }//end if
-
-        // Parameters could contain anonymous classes or functions.
-        $this->advanceTo($parametersPtr);
-        $this->processBlock($scope, 2);
-
-        // Content.
-        if ($blockPtr !== null) {
-            $this->advanceTo($blockPtr);
-            $this->processBlock($scope, 1);
-        };
 
     }//end processFunction()
 
@@ -1620,8 +1666,8 @@ class PHPDocTypesSniff implements Sniff
                 T_TYPE_UNION,
                 T_TYPE_INTERSECTION,
                 T_NULLABLE,
-                T_OPEN_PARENTHESIS,
-                T_CLOSE_PARENTHESIS,
+                T_TYPE_OPEN_PARENTHESIS,
+                T_TYPE_CLOSE_PARENTHESIS,
                 T_NAME_FULLY_QUALIFIED,
                 T_NAME_QUALIFIED,
                 T_NAME_RELATIVE,
@@ -1629,7 +1675,6 @@ class PHPDocTypesSniff implements Sniff
                 T_STRING,
                 T_NULL,
                 T_ARRAY,
-                T_OBJECT,
                 T_SELF,
                 T_PARENT,
                 T_FALSE,
@@ -1641,6 +1686,11 @@ class PHPDocTypesSniff implements Sniff
             && ($const === false || $this->lookAhead()['code'] !== T_EQUAL)
         ) {
             $varType .= $this->token['content'];
+            $this->advance();
+        }
+
+        // Allow pass by reference, in case this is constructor property promotion.
+        if ($this->token['content'] == '&') {
             $this->advance();
         }
 
@@ -1748,7 +1798,7 @@ class PHPDocTypesSniff implements Sniff
 
         $this->advance();
 
-        if (in_array($this->token['code'], [T_EQUAL, T_COMMA, T_SEMICOLON, T_CLOSE_PARENTHESIS]) === false) {
+        if (in_array($this->token['code'], [T_EQUAL, T_COMMA, T_SEMICOLON, T_CLOSE_PARENTHESIS, T_OPEN_CURLY_BRACKET]) === false) {
             throw new \Exception('Malformed variable or function declaration.');
         }
 

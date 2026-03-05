@@ -1,0 +1,57 @@
+# Copied from https://github.com/PHPCSStandards/.github/blob/main/.github/workflows/reusable-yamllint.yml
+
+name: Yamllint
+
+on: [push, pull_request]
+
+jobs:
+  yamllint:
+    name: 'Lint Yaml'
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        include:
+          - strict: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Check for existence of a Yamllint config file
+        id: has_config
+        uses: andstor/file-existence-action@076e0072799f4942c8bc574a82233e1e4d13e9d6 # v3.0.0
+        with:
+          files: ".yamllint.y*ml"
+
+      - name: Run Yamllint on all yaml files in repo
+        if: ${{ steps.has_config.outputs.files_exists == 'true' }}
+        run: yamllint . --format colored ${{ matrix.strict && '--strict' || '' }}
+
+      - name: Pipe Yamllint results on to GH for inline display
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        run: yamllint . --format github ${{ matrix.strict && '--strict' || '' }}
+
+  actionlint:
+    name: 'Check GHA workflows'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          persist-credentials: false
+
+      - name: Add problem matcher
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          curl -o actionlint-matcher.json https://raw.githubusercontent.com/rhysd/actionlint/main/.github/actionlint-matcher.json
+          echo "::add-matcher::actionlint-matcher.json"
+
+      - name: Check workflow files
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: -color

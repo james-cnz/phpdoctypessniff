@@ -1,0 +1,8 @@
+parameters:
+    level: 7
+    paths:
+        - .
+    excludePaths:
+        - vendor
+    bootstrapFiles:
+        - vendor/squizlabs/php_codesniffer/autoload.php
