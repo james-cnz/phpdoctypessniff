@@ -14,8 +14,8 @@ use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 /**
  * Unit test class for the PHPDoc Types sniff.
  *
- * @covers \PHP_CodeSniffer\Standards\Generic\Sniffs\Commenting\PHPDocTypesSniff
- * @covers \PHP_CodeSniffer\Util\PHPDocTypesUtil
+ * @covers \JamesCNZ\PHPDocTypesSniff\JamesCNZGeneric\Sniffs\Commenting\PHPDocTypesSniff
+ * @covers \JamesCNZ\PHPDocTypesSniff\JamesCNZGeneric\Util\PHPDocTypesUtil
  */
 final class PHPDocTypesUnitTest extends AbstractSniffUnitTest
 {

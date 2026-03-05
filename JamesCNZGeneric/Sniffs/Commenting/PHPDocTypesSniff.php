@@ -1283,7 +1283,7 @@ class PHPDocTypesSniff implements Sniff
                 $paramParsedArray = [];
                 foreach ($parameters as $parameter) {
                     $paramText = $parameter['content'];
-                    $paramText = preg_replace('/\/\*.*\*\//', '', $paramText);
+                    $paramText = preg_replace('/\/\*.*\*\//', ' ', $paramText);
                     $paramText = trim($paramText);
                     while (($spacePos = strpos($paramText, ' ')) !== false
                         && in_array(
@@ -1520,6 +1520,38 @@ class PHPDocTypesSniff implements Sniff
         // Parameters could contain anonymous classes or functions.
         $this->advanceTo($parametersPtr);
         $this->processBlock($scope, 2);
+        $this->advanceTo($this->tokens[$parametersPtr]['parenthesis_closer']);
+        $this->advance(T_CLOSE_PARENTHESIS);
+
+        // Return type.
+        if ($this->token['code'] == T_COLON) {
+            $this->advance(T_COLON);
+            while (in_array(
+                $this->token['code'],
+                [
+                    T_TYPE_UNION,
+                    T_TYPE_INTERSECTION,
+                    T_NULLABLE,
+                    T_TYPE_OPEN_PARENTHESIS,
+                    T_TYPE_CLOSE_PARENTHESIS,
+                    T_NAME_FULLY_QUALIFIED,
+                    T_NAME_QUALIFIED,
+                    T_NAME_RELATIVE,
+                    T_NS_SEPARATOR,
+                    T_STRING,
+                    T_NULL,
+                    T_ARRAY,
+                    T_SELF,
+                    T_PARENT,
+                    T_FALSE,
+                    T_TRUE,
+                    T_CALLABLE,
+                    T_STATIC,
+                ]
+            )) {
+                $this->advance();
+            }
+        }
 
         // Content.
         if ($blockPtr !== null) {
@@ -1614,8 +1646,8 @@ class PHPDocTypesSniff implements Sniff
                 T_TYPE_UNION,
                 T_TYPE_INTERSECTION,
                 T_NULLABLE,
-                T_OPEN_PARENTHESIS,
-                T_CLOSE_PARENTHESIS,
+                T_TYPE_OPEN_PARENTHESIS,
+                T_TYPE_CLOSE_PARENTHESIS,
                 T_NAME_FULLY_QUALIFIED,
                 T_NAME_QUALIFIED,
                 T_NAME_RELATIVE,
@@ -1623,7 +1655,6 @@ class PHPDocTypesSniff implements Sniff
                 T_STRING,
                 T_NULL,
                 T_ARRAY,
-                T_OBJECT,
                 T_SELF,
                 T_PARENT,
                 T_FALSE,
@@ -1635,6 +1666,11 @@ class PHPDocTypesSniff implements Sniff
             && ($const === false || $this->lookAhead()['code'] !== T_EQUAL)
         ) {
             $varType .= $this->token['content'];
+            $this->advance();
+        }
+
+        // Allow pass by reference, in case this is constructor property promotion.
+        if ($this->token['content'] == '&') {
             $this->advance();
         }
 
@@ -1742,7 +1778,7 @@ class PHPDocTypesSniff implements Sniff
 
         $this->advance();
 
-        if (in_array($this->token['code'], [T_EQUAL, T_COMMA, T_SEMICOLON, T_CLOSE_PARENTHESIS]) === false) {
+        if (in_array($this->token['code'], [T_EQUAL, T_COMMA, T_SEMICOLON, T_CLOSE_PARENTHESIS, T_OPEN_CURLY_BRACKET]) === false) {
             throw new \Exception('Malformed variable or function declaration.');
         }
 
