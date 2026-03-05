@@ -1365,7 +1365,7 @@ class PHPDocTypesSniff implements Sniff
                         $docParamsMatched[$docParamParsed->name] = true;
 
                         if ($this->checkTypeMatch === true
-                            && $this->typesUtil->comparetypes($paramParsed->type, $docParamParsed->type) === false
+                            && $this->typesUtil->comparetypes($paramParsed->type ?? 'mixed', $docParamParsed->type) === false
                         ) {
                             $this->file->addError(
                                 'PHPDoc function parameter type mismatch',
@@ -1497,7 +1497,7 @@ class PHPDocTypesSniff implements Sniff
                         true
                     );
                 } else {
-                    $retParsed = (object) ['type' => 'mixed'];
+                    $retParsed = (object) ['type' => null];
                 }
 
                 if (isset($comment->tags['@return']) === false) {
@@ -1755,7 +1755,7 @@ class PHPDocTypesSniff implements Sniff
                         );
                     } else {
                         if ($this->checkTypeMatch === true
-                            && $this->typesUtil->comparetypes($varParsed->type, $docVarParsed->type) === false
+                            && $this->typesUtil->comparetypes($varParsed->type ?? 'mixed', $docVarParsed->type) === false
                         ) {
                             $this->file->addError(
                                 'PHPDoc var type mismatch',

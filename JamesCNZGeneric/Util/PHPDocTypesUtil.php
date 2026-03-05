@@ -497,7 +497,7 @@ class PHPDocTypesUtil
     {
         if ($narrowType === null) {
             return false;
-        } else if ($wideType === null || $wideType === 'mixed' || $narrowType === 'never') {
+        } else if ($wideType === null || ($wideType === 'mixed' && $narrowType !== 'void') || $narrowType === 'never') {
             return true;
         }
 
@@ -976,7 +976,12 @@ class PHPDocTypesUtil
 
             sort($unionTypes);
             $unionTypes = array_unique($unionTypes);
-            $mixedPos   = array_search('mixed', $unionTypes);
+            $voidPos    = array_search('void', $unionTypes);
+            if ($voidPos !== false && count($unionTypes) > 1) {
+                throw new \Exception('void is a standalone type');
+            }
+
+            $mixedPos = array_search('mixed', $unionTypes);
             if ($mixedPos !== false) {
                 $unionTypes = ['mixed'];
             }
