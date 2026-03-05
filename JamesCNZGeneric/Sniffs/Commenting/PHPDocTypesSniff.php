@@ -1497,7 +1497,7 @@ class PHPDocTypesSniff implements Sniff
                         true
                     );
                 } else {
-                    $retParsed = (object) ['type' => null];
+                    $retParsed = (object) ['type' => ($name == '__construct') ? $scope->className : null];
                 }
 
                 if (isset($comment->tags['@return']) === false) {
