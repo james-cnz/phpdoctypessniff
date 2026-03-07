@@ -9,7 +9,7 @@
             "email": "jeg+accounts.github@cloudy.kiwi.nz"
         }
     ],
-    "version": "0.1",
+    "version": "0.2",
     "require": {
         "php": ">=7.4.0",
         "ext-json": "*",
