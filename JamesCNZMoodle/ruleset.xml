@@ -5,6 +5,7 @@
 
     <rule ref="JamesCNZPSR5.Commenting.PHPDocTypes">
         <properties>
+            <property name="checkHasDocBlocks" value="false"/>
             <property name="checkPassSplat" value="false"/>
         </properties>
     </rule>
