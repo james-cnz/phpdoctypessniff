@@ -9,7 +9,8 @@
 
 namespace JamesCNZ\PHPDocTypesSniff\JamesCNZPSR5\Tests\Commenting;
 
-use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
+// use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
+use JamesCNZ\PHPDocTypesSniff\JamesCNZGeneric\Tests\AbstractSniffUnitTest;
 
 /**
  * Unit test class for the PHPDoc Types sniff.

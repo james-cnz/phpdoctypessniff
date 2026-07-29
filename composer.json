@@ -27,7 +27,8 @@
     "scripts": {
         "install-codestandards": [
             "Dealerdirect\\Composer\\Plugin\\Installers\\PHPCodeSniffer\\Plugin::run"
-        ]
+        ],
+        "test-phpunit" : "phpunit"
     },
     "support": {
         "issues": "https://github.com/james-cnz/phpdoctypessniff/issues",

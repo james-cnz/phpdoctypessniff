@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+    bootstrap="vendor/squizlabs/php_codesniffer/autoload.php"
+    colors="true"
+    cacheResult="false"
+>
+    <testsuites>
+        <testsuite name="PHPDocTypeSniff">
+            <directory suffix="Test.php">JamesCNZGeneric/Tests</directory>
+            <directory suffix="Test.php">JamesCNZPSR5/Tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
