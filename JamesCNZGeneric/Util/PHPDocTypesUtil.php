@@ -488,67 +488,63 @@ class PHPDocTypesUtil
     /**
      * Compare types
      *
-     * @param ?string $wideType   the type that should be wider, e.g. PHP type
-     * @param ?string $narrowType the type that should be narrower, e.g. PHPDoc type
+     * @param ?string $wideTypeStr   the type that should be wider, e.g. PHP type
+     * @param ?string $narrowTypeStr the type that should be narrower, e.g. PHPDoc type
      *
-     * @return bool whether $narrowType has the same or narrower scope as $wideType
+     * @return bool whether $narrowTypeStr has the same or narrower scope as $wideTypeStr
      */
-    public function compareTypes($wideType, $narrowType)
+    public function compareTypes($wideTypeStr, $narrowTypeStr)
     {
-        if ($narrowType === null) {
-            return false;
-        } else if ($wideType === null || ($wideType === 'mixed' && $narrowType !== 'void') || $narrowType === 'never') {
+        if ($wideTypeStr === null) {
             return true;
+        } else if ($narrowTypeStr === null) {
+            return false;
         }
 
-        $wideIntersections   = explode('|', $wideType);
-        $narrowIntersections = explode('|', $narrowType);
+        $narrowTypeArray = array_unique(explode('|', $narrowTypeStr));
+        $wideTypeArray = array_unique(explode('|', $wideTypeStr));
 
-        // We have to match all narrow intersections.
-        $haveAllIntersections = true;
-        foreach ($narrowIntersections as $narrowIntersection) {
-            $narrowSingles = explode('&', $narrowIntersection);
+        // We don't need to check the narrow types that we can already see match.
+        $narrowTypeArray = array_diff($narrowTypeArray, $wideTypeArray);
 
-            // If the wide types are super types, that should match.
-            $narrowAdditions = [];
-            foreach ($narrowSingles as $narrowSingle) {
-                assert($narrowSingle !== '');
-                $superTypes      = $this->superTypes($narrowSingle);
-                $narrowAdditions = array_merge($narrowAdditions, $superTypes);
+        // We need to check every remaining narrow type.
+        foreach ($narrowTypeArray as $narrowType) {
+            $narrowParts = array_unique(explode('&', $narrowType));
+
+            // The never type is a subtype of everything.
+            if (in_array('never', $narrowParts)) {
+                continue;
             }
 
-            $narrowSingles = array_merge($narrowSingles, $narrowAdditions);
-            sort($narrowSingles);
-            $narrowSingles = array_unique($narrowSingles);
+            // Add super types.  This doesn't change the type,
+            // But means we can match wider types.
+            $narrowAdditions = [];
+            foreach ($narrowParts as $narrowPart) {
+                $narrowAdditions = array_merge(
+                    $narrowAdditions,
+                    $this->superTypes($narrowPart)
+                );
+            }
+            $narrowParts = array_unique(array_merge($narrowParts, $narrowAdditions));
+            if ($narrowParts != ['void']) {
+                $narrowParts = array_merge($narrowParts, ['mixed']);
+            }
 
-            // We need to look in each wide intersection.
-            $haveThisIntersection = false;
-            foreach ($wideIntersections as $wideIntersection) {
-                $wideSingles = explode('&', $wideIntersection);
-
-                // And find all parts of one of them.
-                $haveAllSingles = true;
-                foreach ($wideSingles as $wideSingle) {
-                    if (in_array($wideSingle, $narrowSingles) === false) {
-                        $haveAllSingles = false;
-                        break;
-                    }
-                }
-
-                if ($haveAllSingles === true) {
-                    $haveThisIntersection = true;
+            // Make sure there is a matching wide type.
+            $found = false;
+            foreach ($wideTypeArray as $wideType) {
+                $wideParts = explode('&', $wideType);
+                if (count(array_diff($wideParts, $narrowParts)) == 0) {
+                    $found = true;
                     break;
                 }
             }
-
-            if ($haveThisIntersection === false) {
-                $haveAllIntersections = false;
-                break;
+            if (!$found) {
+                return false;
             }
-        }//end foreach
+        }
 
-        return $haveAllIntersections;
-
+        return true;
     }//end compareTypes()
 
 
