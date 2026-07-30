@@ -1247,7 +1247,7 @@ class PHPDocTypesUtil
                 do {
                     $next = $this->next;
                     if ($next !== null
-                        && (ctype_alpha($next) === true || $next[0] === '_' || $next[0] === "'" || $next[0] === '"'
+                        && (ctype_alpha($next[0]) === true || $next[0] === '_' || $next[0] === "'" || $next[0] === '"'
                         || ((ctype_digit($next[0]) === true || $next[0] === '-') && strpos($next, '.') === false))
                         && ($this->next(1) === ':' || ($this->next(1) === '?' && $this->next(2) === ':'))
                     ) {
@@ -1280,7 +1280,7 @@ class PHPDocTypesUtil
                 do {
                     $next = $this->next;
                     if ($next === null
-                        || (ctype_alpha($next) === false && $next[0] !== '_' && $next[0] !== "'" && $next[0] !== '"')
+                        || (ctype_alpha($next[0]) === false && $next[0] !== '_' && $next[0] !== "'" && $next[0] !== '"')
                     ) {
                         throw new \Exception('Invalid object key.');
                     }
