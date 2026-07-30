@@ -1290,26 +1290,14 @@ class PHPDocTypesSniff implements Sniff
                 // Gather parameter data.
                 $paramParsedArray = [];
                 foreach ($parameters as $parameter) {
-                    $paramText = $parameter['content'];
-                    $paramText = preg_replace('/\/\*.*\*\//', ' ', $paramText);
-                    $paramText = trim($paramText);
-                    while (($spacePos = strpos($paramText, ' ')) !== false
-                        && in_array(
-                            strtolower(substr($paramText, 0, $spacePos)),
-                            [
-                                'public',
-                                'private',
-                                'protected',
-                                'readonly',
-                            ]
-                        ) === true
-                    ) {
-                        $paramText = trim(substr($paramText, (strpos($paramText, ' ') + 1)));
-                    }
-
                     $paramParsed = $this->typesUtil->parseTypeAndName(
                         $scope,
-                        $paramText,
+                        $parameter['type_hint']
+                        . ' '
+                        . ($parameter['pass_by_reference'] ? '&' : '')
+                        . ($parameter['variable_length'] ? '...' : '')
+                        . $parameter['name']
+                        . (isset($parameter['default']) ? ' = ' . $parameter['default'] : ''),
                         3,
                         true
                     );
