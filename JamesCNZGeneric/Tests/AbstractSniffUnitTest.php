@@ -9,6 +9,7 @@ namespace JamesCNZ\PHPDocTypesSniff\JamesCNZGeneric\Tests;
 
 // require_once __DIR__ . '/../../vendor/squizlabs/php_codesniffer/autoload.php';
 define('PHP_CODESNIFFER_VERBOSITY', 1);
+define('PHP_CODESNIFFER_CBF', true);
 
 use PHPUnit\Framework\TestCase;
 use PHP_CodeSniffer\Files\LocalFile;
@@ -64,6 +65,13 @@ abstract class AbstractSniffUnitTest extends TestCase {
             $expectedWarnings = $this->getWarningList($fixtureFileNoPath);
             $this->assertEquals($expectedErrors, $foundErrors, "Fixture {$fixtureFileNoPath} errors comparison.");
             $this->assertEquals($expectedWarnings, $foundWarnings, "Fixture {$fixtureFileNoPath} warnings comparison.");
+            if (file_exists($fixtureFile . '.fixed')) {
+                $phpcsFile->fixer->fixFile();
+                $this->assertSame(
+                    file_get_contents($fixtureFile . '.fixed'),
+                    $phpcsFile->fixer->getContents()
+                );
+            }
         }
     }
 
