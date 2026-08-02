@@ -26,6 +26,28 @@ class PHPDocTypesUtil
      * @var array<string, string[]>
      */
     protected $library = [
+        // Basic types
+        'array'                             => ['iterable'],
+        'array-key'                         => ['scalar'],
+        'bool'                              => ['scalar'],
+        'callable'                          => [],
+        'callable-string'                   => ['callable', 'string', 'array-key', 'scalar'],
+        'false'                             => ['bool'],
+        'float'                             => ['scalar'],
+        'int'                               => ['array-key', 'scalar'],
+        'iterable'                          => [],
+        'mixed'                             => [],
+        'never'                             => [], // Actually everything.
+        'null'                              => [],
+        'object'                            => [],
+        'parent'                            => ['object'],
+        'resource'                          => [],
+        'self'                              => ['parent', 'object'],
+        'static'                            => ['self', 'parent', 'object'],
+        'string'                            => ['array-key', 'scaler'],
+        'true'                              => ['bool'],
+        'void'                              => [], // Not even mixed.
+        '$this'                             => ['static', 'self', 'object'],
         // Predefined general.
         '\\ArrayAccess'                     => [],
         '\\BackedEnum'                      => ['\\UnitEnum'],
@@ -557,36 +579,9 @@ class PHPDocTypesUtil
      */
     protected function superTypes($baseType)
     {
-        if (in_array($baseType, ['int', 'string']) === true) {
-            $superTypes = [
-                'array-key',
-                'scaler',
-            ];
-        } else if ($baseType === 'callable-string') {
-            $superTypes = [
-                'callable',
-                'string',
-                'array-key',
-                'scalar',
-            ];
-        } else if (in_array($baseType, ['array-key', 'float', 'bool']) === true) {
-            $superTypes = ['scalar'];
-        } else if ($baseType === 'array') {
-            $superTypes = ['iterable'];
-        } else if ($baseType === 'static') {
-            $superTypes = [
-                'self',
-                'parent',
-                'object',
-            ];
-        } else if ($baseType === 'self') {
-            $superTypes = [
-                'parent',
-                'object',
-            ];
-        } else if ($baseType === 'parent') {
-            $superTypes = ['object'];
-        } else if (strpos($baseType, 'static(') === 0 || $baseType[0] === '\\') {
+        if ($baseType[0] !== '\\' && strpos($baseType, 'static(') !== 0) {
+            $superTypes = $this->library[$baseType] ?? [];
+        } else {
             if (strpos($baseType, 'static(') === 0) {
                 $superTypes     = [
                     'static',
@@ -645,8 +640,6 @@ class PHPDocTypesUtil
             }//end while
 
             $superTypes = array_unique($superTypes);
-        } else {
-            $superTypes = [];
         }//end if
 
         return $superTypes;
