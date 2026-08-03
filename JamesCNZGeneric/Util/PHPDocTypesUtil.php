@@ -904,7 +904,7 @@ class PHPDocTypesUtil
                     $nextNext = $this->next(1);
                     $haveMoreIntersections = $this->next === '&'
                         && !(in_array($nextNext, ['...', '=', ',', ')', null])
-                            || ($nextNext[0] === '$'));
+                            || ($nextNext[0] === '$' && $nextNext != '$this'));
                     if ($haveMoreIntersections === true) {
                         $this->parseToken('&');
                     }
